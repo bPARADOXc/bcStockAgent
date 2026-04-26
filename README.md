@@ -248,6 +248,61 @@ ta = TradingAgentsGraph(config=config)
 _, decision = ta.propagate("NVDA", "2026-01-15")
 ```
 
+
+## A-Share (中国A股) Quick Start
+
+TradingAgents now includes a phased A-share adaptation path. Current scope is **analysis + scoring + advisory output** (not auto execution).
+
+### What is already adapted
+
+- A-share symbol normalization supports: Chinese names, 6-digit codes, `ts_code` (`600519.SH`), and prefixed symbols (`sh600519`).
+- CN routing supports placeholder vendor mode (`cn_placeholder`) for deterministic unavailable responses while real adapters are integrated.
+- Analyst prompts (market/news/social/fundamentals) include A-share rules and output JSON-oriented contracts.
+- Trader output supports advisory-only decision schema with mandatory `human_review_required`.
+
+### Example A-share config
+
+```python
+from tradingagents.graph.trading_graph import TradingAgentsGraph
+from tradingagents.default_config import DEFAULT_CONFIG
+
+config = DEFAULT_CONFIG.copy()
+
+# NOTE: market identity defaults for China A-share mode.
+config["market"] = {
+    "default_market": "CN_A_SHARE",
+    "timezone": "Asia/Shanghai",
+    "currency": "CNY",
+    "code_format": "ts_code",  # e.g. 600519.SH
+}
+
+# NOTE: during phased rollout, cn_placeholder returns explicit unavailable data.
+config["data_vendors"] = {
+    "core_stock_apis": "cn_placeholder",
+    "technical_indicators": "cn_placeholder",
+    "fundamental_data": "cn_placeholder",
+    "news_data": "cn_placeholder",
+}
+
+# NOTE: disable vendor fallback for deterministic CN behavior in tests.
+config["provider_fallback_enabled"] = False
+
+# NOTE: Chinese user-facing outputs.
+config["output_language"] = "zh-CN"
+
+ta = TradingAgentsGraph(debug=True, config=config)
+_, decision = ta.propagate("600519.SH", "2026-04-20")
+print(decision)
+```
+
+### A-share advisory constraints
+
+- This project does **not** auto place real orders.
+- Use trader output as advisory only (`buy/sell/hold/watch`) and always require human review.
+- Consider A-share specific execution constraints: T+1, limit-up/limit-down liquidity, suspension, ST/*ST risk.
+
+For planned integrations (AkShare/Tushare/Eastmoney/Cninfo), see `tradingagents/dataflows/` placeholders and route config.
+
 ## Contributing
 
 We welcome contributions from the community! Whether it's fixing a bug, improving documentation, or suggesting a new feature, your input helps make this project better. If you are interested in this line of research, please consider joining our open-source financial AI research community [Tauric Research](https://tauric.ai/).

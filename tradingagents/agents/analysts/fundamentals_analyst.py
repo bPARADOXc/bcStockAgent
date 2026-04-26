@@ -5,10 +5,59 @@ from tradingagents.agents.utils.agent_utils import (
     get_cashflow,
     get_fundamentals,
     get_income_statement,
-    get_insider_transactions,
     get_language_instruction,
 )
 from tradingagents.dataflows.config import get_config
+
+
+def _build_fundamentals_system_message(language_instruction: str, market_label: str = "A股") -> str:
+    """Build fundamentals analyst prompt for market-specific fundamental analysis.
+
+    NOTE: extracted helper simplifies prompt regression testing.
+    """
+    return (
+        f"你是{market_label}基本面分析师。"
+        "你需要围绕财报质量、估值、成长性、盈利能力、现金流和资产负债结构，"
+        "输出结构化投资研究结论。"
+        "\n\n"
+        "请优先调用以下工具并交叉验证："
+        "\n"
+        "1) get_fundamentals（公司概览与估值）"
+        "\n"
+        "2) get_income_statement（收入与利润趋势）"
+        "\n"
+        "3) get_balance_sheet（资产负债结构）"
+        "\n"
+        "4) get_cashflow（经营现金流质量）"
+        "\n\n"
+        "A股语境必须覆盖：年报/半年报/季报口径、商誉减值风险、应收账款与存货质量、"
+        "股东减持/质押与解禁压力（若可得）、监管问询或异常财务信号（若可得）。"
+        "\n\n"
+        "输出必须为JSON对象（不要输出Markdown代码块），格式如下："
+        "\n"
+        "{"
+        '"symbol":"...",'
+        '"market":"A股",'
+        '"valuation_score":0,'
+        '"growth_score":0,'
+        '"profitability_score":0,'
+        '"cashflow_score":0,'
+        '"balance_sheet_score":0,'
+        '"financial_quality_risk":[], '
+        '"peer_comparison":[], '
+        '"summary":"...", '
+        '"evidence":[]'
+        "}"
+        "\n\n"
+        "评分要求："
+        "\n"
+        "- 所有 score 字段范围均为 0-100。"
+        "\n"
+        "- financial_quality_risk 至少列出关键风险或写明无显著风险。"
+        "\n"
+        "- evidence 至少包含使用过的关键财务指标或同比/环比证据。"
+        + language_instruction
+    )
 
 
 def create_fundamentals_analyst(llm):
@@ -23,11 +72,12 @@ def create_fundamentals_analyst(llm):
             get_income_statement,
         ]
 
-        system_message = (
-            "You are a researcher tasked with analyzing fundamental information over the past week about a company. Please write a comprehensive report of the company's fundamental information such as financial documents, company profile, basic company financials, and company financial history to gain a full view of the company's fundamental information to inform traders. Make sure to include as much detail as possible. Provide specific, actionable insights with supporting evidence to help traders make informed decisions."
-            + " Make sure to append a Markdown table at the end of the report to organize key points in the report, organized and easy to read."
-            + " Use the available tools: `get_fundamentals` for comprehensive company analysis, `get_balance_sheet`, `get_cashflow`, and `get_income_statement` for specific financial statements."
-            + get_language_instruction(),
+        config = get_config()
+        market_label = "A股" if config.get("market", {}).get("default_market") == "CN_A_SHARE" else "Global"
+        # NOTE: keep output language externally configurable.
+        system_message = _build_fundamentals_system_message(
+            get_language_instruction(),
+            market_label=market_label,
         )
 
         prompt = ChatPromptTemplate.from_messages(

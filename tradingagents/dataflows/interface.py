@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Tuple
 
 # Import from vendor-specific modules
 from .y_finance import (
@@ -22,7 +22,19 @@ from .alpha_vantage import (
     get_news as get_alpha_vantage_news,
     get_global_news as get_alpha_vantage_global_news,
 )
+from .cn_data_placeholder import (
+    get_cn_stock_data,
+    get_cn_indicator,
+    get_cn_fundamentals,
+    get_cn_balance_sheet,
+    get_cn_cashflow,
+    get_cn_income_statement,
+    get_cn_news,
+    get_cn_global_news,
+    get_cn_insider_transactions,
+)
 from .alpha_vantage_common import AlphaVantageRateLimitError
+from .stock_code_mapper import normalize_ashare_symbol
 
 # Configuration and routing logic
 from .config import get_config
@@ -63,6 +75,7 @@ TOOLS_CATEGORIES = {
 VENDOR_LIST = [
     "yfinance",
     "alpha_vantage",
+    "cn_placeholder",
 ]
 
 # Mapping of methods to their vendor-specific implementations
@@ -71,43 +84,65 @@ VENDOR_METHODS = {
     "get_stock_data": {
         "alpha_vantage": get_alpha_vantage_stock,
         "yfinance": get_YFin_data_online,
+        "cn_placeholder": get_cn_stock_data,
     },
     # technical_indicators
     "get_indicators": {
         "alpha_vantage": get_alpha_vantage_indicator,
         "yfinance": get_stock_stats_indicators_window,
+        "cn_placeholder": get_cn_indicator,
     },
     # fundamental_data
     "get_fundamentals": {
         "alpha_vantage": get_alpha_vantage_fundamentals,
         "yfinance": get_yfinance_fundamentals,
+        "cn_placeholder": get_cn_fundamentals,
     },
     "get_balance_sheet": {
         "alpha_vantage": get_alpha_vantage_balance_sheet,
         "yfinance": get_yfinance_balance_sheet,
+        "cn_placeholder": get_cn_balance_sheet,
     },
     "get_cashflow": {
         "alpha_vantage": get_alpha_vantage_cashflow,
         "yfinance": get_yfinance_cashflow,
+        "cn_placeholder": get_cn_cashflow,
     },
     "get_income_statement": {
         "alpha_vantage": get_alpha_vantage_income_statement,
         "yfinance": get_yfinance_income_statement,
+        "cn_placeholder": get_cn_income_statement,
     },
     # news_data
     "get_news": {
         "alpha_vantage": get_alpha_vantage_news,
         "yfinance": get_news_yfinance,
+        "cn_placeholder": get_cn_news,
     },
     "get_global_news": {
         "yfinance": get_global_news_yfinance,
         "alpha_vantage": get_alpha_vantage_global_news,
+        "cn_placeholder": get_cn_global_news,
     },
     "get_insider_transactions": {
         "alpha_vantage": get_alpha_vantage_insider_transactions,
         "yfinance": get_yfinance_insider_transactions,
+        "cn_placeholder": get_cn_insider_transactions,
     },
 }
+
+# NOTE: methods whose first positional argument is a ticker/symbol.
+_SYMBOL_METHODS = {
+    "get_stock_data",
+    "get_indicators",
+    "get_fundamentals",
+    "get_balance_sheet",
+    "get_cashflow",
+    "get_income_statement",
+    "get_news",
+    "get_insider_transactions",
+}
+
 
 def get_category_for_method(method: str) -> str:
     """Get the category that contains the specified method."""
@@ -115,6 +150,7 @@ def get_category_for_method(method: str) -> str:
         if method in info["tools"]:
             return category
     raise ValueError(f"Method '{method}' not found in any category")
+
 
 def get_vendor(category: str, method: str = None) -> str:
     """Get the configured vendor for a data category or specific tool method.
@@ -131,21 +167,65 @@ def get_vendor(category: str, method: str = None) -> str:
     # Fall back to category-level configuration
     return config.get("data_vendors", {}).get(category, "default")
 
+
+def _is_cn_ashare_mode() -> bool:
+    """Return True when config indicates CN A-share as default market."""
+    config = get_config()
+    market_cfg = config.get("market", {})
+    default_market = str(market_cfg.get("default_market", "")).upper()
+    return default_market == "CN_A_SHARE"
+
+
+def _normalize_symbol_args(method: str, args: Tuple, kwargs: dict) -> Tuple[Tuple, dict]:
+    """Normalize symbol input in CN A-share mode for symbol-carrying methods."""
+    if method not in _SYMBOL_METHODS or not _is_cn_ashare_mode():
+        return args, kwargs
+
+    # NOTE: all symbol methods currently pass ticker as first positional arg.
+    if not args:
+        return args, kwargs
+
+    symbol_raw = args[0]
+    if not isinstance(symbol_raw, str):
+        return args, kwargs
+
+    try:
+        normalized = normalize_ashare_symbol(symbol_raw)
+    except ValueError:
+        # NOTE: keep legacy behavior if input is not a valid A-share symbol.
+        return args, kwargs
+
+    new_args = (normalized, *args[1:])
+    return new_args, kwargs
+
+
 def route_to_vendor(method: str, *args, **kwargs):
-    """Route method calls to appropriate vendor implementation with fallback support."""
+    """Route method calls to appropriate vendor implementation.
+
+    Fallback behavior is controlled by config key `provider_fallback_enabled`
+    (default True to preserve historical behavior).
+    """
     category = get_category_for_method(method)
     vendor_config = get_vendor(category, method)
-    primary_vendors = [v.strip() for v in vendor_config.split(',')]
+    primary_vendors = [v.strip() for v in vendor_config.split(',') if v.strip()]
 
     if method not in VENDOR_METHODS:
         raise ValueError(f"Method '{method}' not supported")
 
-    # Build fallback chain: primary vendors first, then remaining available vendors
+    # Normalize args for CN mode before vendor call.
+    args, kwargs = _normalize_symbol_args(method, args, kwargs)
+
+    # Build vendor chain.
     all_available_vendors = list(VENDOR_METHODS[method].keys())
-    fallback_vendors = primary_vendors.copy()
-    for vendor in all_available_vendors:
-        if vendor not in fallback_vendors:
-            fallback_vendors.append(vendor)
+    fallback_enabled = bool(get_config().get("provider_fallback_enabled", True))
+
+    if fallback_enabled:
+        fallback_vendors = primary_vendors.copy()
+        for vendor in all_available_vendors:
+            if vendor not in fallback_vendors:
+                fallback_vendors.append(vendor)
+    else:
+        fallback_vendors = primary_vendors
 
     for vendor in fallback_vendors:
         if vendor not in VENDOR_METHODS[method]:

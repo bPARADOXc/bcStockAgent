@@ -8,6 +8,59 @@ from tradingagents.agents.utils.agent_utils import (
 from tradingagents.dataflows.config import get_config
 
 
+def _build_market_system_message(language_instruction: str, market_label: str = "A股") -> str:
+    """Build the market analyst system prompt for the specified market context.
+
+    NOTE: extracted into a helper for easier unit testing and future multi-market
+    prompt templating.
+    """
+    return (
+        f"你是{market_label}技术面与交易微观结构分析师。"
+        "你的任务是基于行情和技术指标，输出可执行的分析结论，并严格考虑A股交易制度。"
+        "\n\n"
+        "请先调用 get_stock_data 获取OHLCV数据，再按需调用 get_indicators。"
+        "\n"
+        "可选指标建议（最多8个，避免重复）："
+        "\n"
+        "- 均线: close_10_ema, close_50_sma, close_200_sma"
+        "\n"
+        "- 动量: macd, macds, macdh, rsi"
+        "\n"
+        "- 波动率: boll, boll_ub, boll_lb, atr"
+        "\n"
+        "- 量价: vwma"
+        "\n\n"
+        "A股语境必须覆盖：涨跌停、T+1、停复牌、ST风险、板块属性（主板/创业板/科创板/北交所）"
+        "以及量价背离和资金博弈特征。"
+        "\n\n"
+        "输出必须为JSON对象（不要输出Markdown代码块），格式如下："
+        "\n"
+        "{"
+        '"symbol":"...",'
+        '"name":"...",'
+        '"market":"A股",'
+        '"trend":"up/down/sideways",'
+        '"technical_score":0,'
+        '"volume_price_analysis":"...",'
+        '"support_levels":[], '
+        '"resistance_levels":[], '
+        '"momentum_signals":[], '
+        '"risk_flags":[], '
+        '"summary":"...", '
+        '"evidence":[]'
+        "}"
+        "\n\n"
+        "要求："
+        "\n"
+        "1) technical_score 在 0-100。"
+        "\n"
+        "2) risk_flags 必须包含A股制度性风险（若存在）。"
+        "\n"
+        "3) evidence 至少给出使用过的数据点或指标依据。"
+        + language_instruction
+    )
+
+
 def create_market_analyst(llm):
 
     def market_analyst_node(state):
@@ -19,35 +72,10 @@ def create_market_analyst(llm):
             get_indicators,
         ]
 
-        system_message = (
-            """You are a trading assistant tasked with analyzing financial markets. Your role is to select the **most relevant indicators** for a given market condition or trading strategy from the following list. The goal is to choose up to **8 indicators** that provide complementary insights without redundancy. Categories and each category's indicators are:
-
-Moving Averages:
-- close_50_sma: 50 SMA: A medium-term trend indicator. Usage: Identify trend direction and serve as dynamic support/resistance. Tips: It lags price; combine with faster indicators for timely signals.
-- close_200_sma: 200 SMA: A long-term trend benchmark. Usage: Confirm overall market trend and identify golden/death cross setups. Tips: It reacts slowly; best for strategic trend confirmation rather than frequent trading entries.
-- close_10_ema: 10 EMA: A responsive short-term average. Usage: Capture quick shifts in momentum and potential entry points. Tips: Prone to noise in choppy markets; use alongside longer averages for filtering false signals.
-
-MACD Related:
-- macd: MACD: Computes momentum via differences of EMAs. Usage: Look for crossovers and divergence as signals of trend changes. Tips: Confirm with other indicators in low-volatility or sideways markets.
-- macds: MACD Signal: An EMA smoothing of the MACD line. Usage: Use crossovers with the MACD line to trigger trades. Tips: Should be part of a broader strategy to avoid false positives.
-- macdh: MACD Histogram: Shows the gap between the MACD line and its signal. Usage: Visualize momentum strength and spot divergence early. Tips: Can be volatile; complement with additional filters in fast-moving markets.
-
-Momentum Indicators:
-- rsi: RSI: Measures momentum to flag overbought/oversold conditions. Usage: Apply 70/30 thresholds and watch for divergence to signal reversals. Tips: In strong trends, RSI may remain extreme; always cross-check with trend analysis.
-
-Volatility Indicators:
-- boll: Bollinger Middle: A 20 SMA serving as the basis for Bollinger Bands. Usage: Acts as a dynamic benchmark for price movement. Tips: Combine with the upper and lower bands to effectively spot breakouts or reversals.
-- boll_ub: Bollinger Upper Band: Typically 2 standard deviations above the middle line. Usage: Signals potential overbought conditions and breakout zones. Tips: Confirm signals with other tools; prices may ride the band in strong trends.
-- boll_lb: Bollinger Lower Band: Typically 2 standard deviations below the middle line. Usage: Indicates potential oversold conditions. Tips: Use additional analysis to avoid false reversal signals.
-- atr: ATR: Averages true range to measure volatility. Usage: Set stop-loss levels and adjust position sizes based on current market volatility. Tips: It's a reactive measure, so use it as part of a broader risk management strategy.
-
-Volume-Based Indicators:
-- vwma: VWMA: A moving average weighted by volume. Usage: Confirm trends by integrating price action with volume data. Tips: Watch for skewed results from volume spikes; use in combination with other volume analyses.
-
-- Select indicators that provide diverse and complementary information. Avoid redundancy (e.g., do not select both rsi and stochrsi). Also briefly explain why they are suitable for the given market context. When you tool call, please use the exact name of the indicators provided above as they are defined parameters, otherwise your call will fail. Please make sure to call get_stock_data first to retrieve the CSV that is needed to generate indicators. Then use get_indicators with the specific indicator names. Write a very detailed and nuanced report of the trends you observe. Provide specific, actionable insights with supporting evidence to help traders make informed decisions."""
-            + """ Make sure to append a Markdown table at the end of the report to organize key points in the report, organized and easy to read."""
-            + get_language_instruction()
-        )
+        config = get_config()
+        market_label = "A股" if config.get("market", {}).get("default_market") == "CN_A_SHARE" else "Global"
+        # NOTE: keep language configurable, but default to existing utility behavior.
+        system_message = _build_market_system_message(get_language_instruction(), market_label=market_label)
 
         prompt = ChatPromptTemplate.from_messages(
             [

@@ -1,4 +1,4 @@
-"""Trader: turns the Research Manager's investment plan into a concrete transaction proposal."""
+"""Trader: turns the Research Manager's investment plan into a structured A-share advisory decision."""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import functools
 
 from langchain_core.messages import AIMessage
 
-from tradingagents.agents.schemas import TraderProposal, render_trader_proposal
+from tradingagents.agents.schemas import AShareTraderDecision, render_ashare_trader_decision
 from tradingagents.agents.utils.agent_utils import build_instrument_context
 from tradingagents.agents.utils.structured import (
     bind_structured,
@@ -15,7 +15,7 @@ from tradingagents.agents.utils.structured import (
 
 
 def create_trader(llm):
-    structured_llm = bind_structured(llm, TraderProposal, "Trader")
+    structured_llm = bind_structured(llm, AShareTraderDecision, "Trader")
 
     def trader_node(state, name):
         company_name = state["company_of_interest"]
@@ -26,20 +26,20 @@ def create_trader(llm):
             {
                 "role": "system",
                 "content": (
-                    "You are a trading agent analyzing market data to make investment decisions. "
-                    "Based on your analysis, provide a specific recommendation to buy, sell, or hold. "
-                    "Anchor your reasoning in the analysts' reports and the research plan."
+                    "You are a China A-share trading advisor. "
+                    "Do NOT place orders. Output an advisory decision only, "
+                    "with explicit risk flags and mandatory human review."
                 ),
             },
             {
                 "role": "user",
                 "content": (
-                    f"Based on a comprehensive analysis by a team of analysts, here is an investment "
-                    f"plan tailored for {company_name}. {instrument_context} This plan incorporates "
-                    f"insights from current technical market trends, macroeconomic indicators, and "
-                    f"social media sentiment. Use this plan as a foundation for evaluating your next "
-                    f"trading decision.\n\nProposed Investment Plan: {investment_plan}\n\n"
-                    f"Leverage these insights to make an informed and strategic decision."
+                    f"基于研究团队结论，请为 {company_name} 生成A股交易建议。{instrument_context} "
+                    f"你必须考虑A股制度约束（T+1、涨跌停、停复牌、ST风险）并输出结构化结论。"
+                    f"\n\n研究计划：{investment_plan}\n\n"
+                    "输出字段至少覆盖：decision, confidence, suggested_position_ratio, "
+                    "stop_loss_reference, take_profit_reference, risk_flags, evidence, "
+                    "human_review_required。"
                 ),
             },
         ]
@@ -48,7 +48,7 @@ def create_trader(llm):
             structured_llm,
             llm,
             messages,
-            render_trader_proposal,
+            render_ashare_trader_decision,
             "Trader",
         )
 

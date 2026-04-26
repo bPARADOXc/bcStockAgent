@@ -5,6 +5,7 @@ from rich.console import Console
 
 from cli.models import AnalystType
 from tradingagents.llm_clients.model_catalog import get_model_options
+from tradingagents.dataflows.stock_code_mapper import normalize_ashare_symbol
 
 console = Console()
 
@@ -39,8 +40,21 @@ def get_ticker() -> str:
 
 
 def normalize_ticker_symbol(ticker: str) -> str:
-    """Normalize ticker input while preserving exchange suffixes."""
-    return ticker.strip().upper()
+    """Normalize ticker input while preserving exchange suffixes.
+
+    NOTE: prefer A-share canonical mapping when input looks like CN stock input
+    (Chinese name, 6-digit code, sh/sz/bj prefix, or ts_code). Falls back to
+    legacy uppercase behavior for non-CN symbols.
+    """
+    raw = ticker.strip()
+    if not raw:
+        return ""
+
+    # Try A-share normalization first; fallback keeps global-market compatibility.
+    try:
+        return normalize_ashare_symbol(raw)
+    except ValueError:
+        return raw.upper()
 
 
 def get_analysis_date() -> str:

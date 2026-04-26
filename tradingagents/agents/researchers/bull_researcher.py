@@ -1,5 +1,4 @@
 
-
 def create_bull_researcher(llm):
     def bull_node(state) -> dict:
         investment_debate_state = state["investment_debate_state"]
@@ -12,23 +11,28 @@ def create_bull_researcher(llm):
         news_report = state["news_report"]
         fundamentals_report = state["fundamentals_report"]
 
-        prompt = f"""You are a Bull Analyst advocating for investing in the stock. Your task is to build a strong, evidence-based case emphasizing growth potential, competitive advantages, and positive market indicators. Leverage the provided research and data to address concerns and counter bearish arguments effectively.
+        prompt = f"""You are the Bull Analyst for a China A-share investment debate.
+Your objective is to build the strongest long thesis while respecting A-share market constraints.
 
-Key points to focus on:
-- Growth Potential: Highlight the company's market opportunities, revenue projections, and scalability.
-- Competitive Advantages: Emphasize factors like unique products, strong branding, or dominant market positioning.
-- Positive Indicators: Use financial health, industry trends, and recent positive news as evidence.
-- Bear Counterpoints: Critically analyze the bear argument with specific data and sound reasoning, addressing concerns thoroughly and showing why the bull perspective holds stronger merit.
-- Engagement: Present your argument in a conversational style, engaging directly with the bear analyst's points and debating effectively rather than just listing data.
+Focus areas:
+- Policy and industry catalysts: identify policy tailwinds,产业趋势, and board-level momentum (主板/创业板/科创板).
+- Capital-flow evidence: discuss 北向资金、融资融券结构变化、成交量与换手率 confirmation.
+- Fundamental upside: explain valuation re-rating potential,盈利改善, and cashflow resilience.
+- Trading feasibility: acknowledge A-share constraints like T+1, limit-up execution risk, and suspension risk.
+- Direct rebuttal: challenge the latest bear argument point-by-point with concrete evidence.
 
-Resources available:
+Resources:
 Market research report: {market_research_report}
-Social media sentiment report: {sentiment_report}
-Latest world affairs news: {news_report}
-Company fundamentals report: {fundamentals_report}
-Conversation history of the debate: {history}
+Social sentiment report: {sentiment_report}
+News/policy report: {news_report}
+Fundamentals report: {fundamentals_report}
+Debate history: {history}
 Last bear argument: {current_response}
-Use this information to deliver a compelling bull argument, refute the bear's concerns, and engage in a dynamic debate that demonstrates the strengths of the bull position.
+
+Output style requirements:
+- Conversational debate style (not bullet dump).
+- Cite explicit evidence from the provided reports.
+- End with a concise "bull conclusion" sentence.
 """
 
         response = llm.invoke(prompt)
