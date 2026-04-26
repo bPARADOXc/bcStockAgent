@@ -8,6 +8,46 @@ from tradingagents.agents.utils.agent_utils import (
 from tradingagents.dataflows.config import get_config
 
 
+def _build_news_system_message(language_instruction: str, market_label: str = "A股") -> str:
+    """Build market-specific news analyst prompt.
+
+    NOTE: helper extraction supports deterministic prompt tests.
+    """
+    return (
+        f"你是{market_label}新闻与政策研究员。"
+        "你需要从公司新闻、行业新闻、宏观政策和监管动态中评估事件冲击。"
+        "\n\n"
+        "请使用："
+        "\n"
+        "1) get_news(query,start_date,end_date) 获取公司与行业相关新闻"
+        "\n"
+        "2) get_global_news(curr_date,look_back_days,limit) 获取宏观/政策背景"
+        "\n\n"
+        "A股语境必须覆盖：证监会/交易所监管动态、问询函、产业政策、北向资金叙事、"
+        "以及潜在停复牌或重大事项公告影响（若可得）。"
+        "\n\n"
+        "输出必须为JSON对象（不要输出Markdown代码块），格式如下："
+        "\n"
+        "{"
+        '"symbol":"...",'
+        '"company_news":[], '
+        '"industry_news":[], '
+        '"macro_policy_news":[], '
+        '"regulatory_news":[], '
+        '"sentiment_score":0,'
+        '"event_importance":0,'
+        '"short_term_impact":"...",'
+        '"medium_term_impact":"...",'
+        '"risk_flags":[], '
+        '"summary":"...", '
+        '"evidence":[]'
+        "}"
+        "\n\n"
+        "评分要求：sentiment_score 范围 -100 到 100，event_importance 范围 0 到 100。"
+        + language_instruction
+    )
+
+
 def create_news_analyst(llm):
     def news_analyst_node(state):
         current_date = state["trade_date"]
@@ -18,11 +58,10 @@ def create_news_analyst(llm):
             get_global_news,
         ]
 
-        system_message = (
-            "You are a news researcher tasked with analyzing recent news and trends over the past week. Please write a comprehensive report of the current state of the world that is relevant for trading and macroeconomics. Use the available tools: get_news(query, start_date, end_date) for company-specific or targeted news searches, and get_global_news(curr_date, look_back_days, limit) for broader macroeconomic news. Provide specific, actionable insights with supporting evidence to help traders make informed decisions."
-            + """ Make sure to append a Markdown table at the end of the report to organize key points in the report, organized and easy to read."""
-            + get_language_instruction()
-        )
+        config = get_config()
+        market_label = "A股" if config.get("market", {}).get("default_market") == "CN_A_SHARE" else "Global"
+        # NOTE: keep language configurable via global config.
+        system_message = _build_news_system_message(get_language_instruction(), market_label=market_label)
 
         prompt = ChatPromptTemplate.from_messages(
             [

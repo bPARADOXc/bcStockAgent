@@ -138,6 +138,57 @@ class TraderProposal(BaseModel):
     )
 
 
+
+
+class TraderDecisionAction(str, Enum):
+    """A-share trader decision actions (analysis-only, no auto execution)."""
+
+    BUY = "buy"
+    SELL = "sell"
+    HOLD = "hold"
+    WATCH = "watch"
+
+
+class AShareTraderDecision(BaseModel):
+    """Structured trader output aligned with A-share advisory workflow."""
+
+    symbol: str = Field(description="Canonical security code, e.g. 600519.SH.")
+    name: Optional[str] = Field(default=None, description="Security name when available.")
+    market: str = Field(default="A股", description="Market label; use 'A股' for CN mode.")
+    decision: TraderDecisionAction = Field(description="One of buy/sell/hold/watch.")
+    confidence: int = Field(description="Decision confidence score from 0 to 100.")
+    suggested_position_ratio: float = Field(description="Suggested position ratio from 0 to 1.")
+    stop_loss_reference: Optional[str] = Field(default=None, description="Risk stop reference.")
+    take_profit_reference: Optional[str] = Field(default=None, description="Take-profit reference.")
+    risk_flags: list[str] = Field(default_factory=list, description="A-share risk flags.")
+    evidence: list[str] = Field(default_factory=list, description="Evidence supporting the decision.")
+    human_review_required: bool = Field(default=True, description="Must be true for advisory workflow.")
+    summary: str = Field(description="Short decision summary for trader handoff.")
+
+
+def render_ashare_trader_decision(decision: AShareTraderDecision) -> str:
+    """Render A-share trader decision as markdown for pipeline compatibility."""
+    parts = [
+        f"**Symbol**: {decision.symbol}",
+        f"**Market**: {decision.market}",
+        f"**Decision**: {decision.decision.value}",
+        f"**Confidence**: {decision.confidence}",
+        f"**Suggested Position Ratio**: {decision.suggested_position_ratio}",
+        f"**Summary**: {decision.summary}",
+        f"**Human Review Required**: {decision.human_review_required}",
+    ]
+    if decision.stop_loss_reference:
+        parts.append(f"**Stop Loss Reference**: {decision.stop_loss_reference}")
+    if decision.take_profit_reference:
+        parts.append(f"**Take Profit Reference**: {decision.take_profit_reference}")
+    if decision.risk_flags:
+        parts.append(f"**Risk Flags**: {', '.join(decision.risk_flags)}")
+    if decision.evidence:
+        parts.append(f"**Evidence**: {', '.join(decision.evidence)}")
+    # NOTE: keep legacy stop-signal marker so graph behavior remains compatible.
+    parts.append(f"FINAL TRANSACTION PROPOSAL: **{decision.decision.value.upper()}**")
+    return "\n\n".join(parts)
+
 def render_trader_proposal(proposal: TraderProposal) -> str:
     """Render a TraderProposal to markdown.
 
