@@ -68,3 +68,13 @@ The trader must remain **advisory-only** and include:
 - ST/*ST and delisting risk
 - Suspension/resumption uncertainty
 - Regulatory inquiry and announcement event risk
+
+
+## 6) Phase 9 mock demo
+
+Run the mock end-to-end advisory demo:
+
+```bash
+# NOTE: runs with mocked LLM outputs; no external market API calls.
+PYTHONPATH=. python scripts/e2e_mock_ashare_demo.py
+```
