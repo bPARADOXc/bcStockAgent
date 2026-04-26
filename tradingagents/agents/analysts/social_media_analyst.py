@@ -3,6 +3,41 @@ from tradingagents.agents.utils.agent_utils import build_instrument_context, get
 from tradingagents.dataflows.config import get_config
 
 
+def _build_social_system_message(language_instruction: str, market_label: str = "A股") -> str:
+    """Build market-specific social sentiment analyst prompt."""
+    return (
+        f"你是{market_label}舆情分析师。"
+        "你需要综合公司相关新闻、讨论热度和情绪方向，识别短线情绪驱动与谣言风险。"
+        "\n\n"
+        "请使用 get_news(query,start_date,end_date) 搜集可得的舆情/媒体线索，并区分："
+        "\n"
+        "- 多头观点"
+        "\n"
+        "- 空头观点"
+        "\n"
+        "- 未证实传闻"
+        "\n\n"
+        "A股语境必须覆盖：股吧/雪球/东方财富讨论倾向、互动易问答与公告解读（若可得）。"
+        "\n\n"
+        "输出必须为JSON对象（不要输出Markdown代码块），格式如下："
+        "\n"
+        "{"
+        '"symbol":"...",'
+        '"sentiment_score":0,'
+        '"attention_score":0,'
+        '"main_topics":[], '
+        '"bullish_points":[], '
+        '"bearish_points":[], '
+        '"rumor_risk":"low/medium/high",'
+        '"evidence":[], '
+        '"summary":"..."'
+        "}"
+        "\n\n"
+        "评分要求：sentiment_score 范围 -100 到 100；attention_score 范围 0 到 100。"
+        + language_instruction
+    )
+
+
 def create_social_media_analyst(llm):
     def social_media_analyst_node(state):
         current_date = state["trade_date"]
@@ -12,11 +47,10 @@ def create_social_media_analyst(llm):
             get_news,
         ]
 
-        system_message = (
-            "You are a social media and company specific news researcher/analyst tasked with analyzing social media posts, recent company news, and public sentiment for a specific company over the past week. You will be given a company's name your objective is to write a comprehensive long report detailing your analysis, insights, and implications for traders and investors on this company's current state after looking at social media and what people are saying about that company, analyzing sentiment data of what people feel each day about the company, and looking at recent company news. Use the get_news(query, start_date, end_date) tool to search for company-specific news and social media discussions. Try to look at all sources possible from social media to sentiment to news. Provide specific, actionable insights with supporting evidence to help traders make informed decisions."
-            + """ Make sure to append a Markdown table at the end of the report to organize key points in the report, organized and easy to read."""
-            + get_language_instruction()
-        )
+        config = get_config()
+        market_label = "A股" if config.get("market", {}).get("default_market") == "CN_A_SHARE" else "Global"
+        # NOTE: keep language configurable via global config.
+        system_message = _build_social_system_message(get_language_instruction(), market_label=market_label)
 
         prompt = ChatPromptTemplate.from_messages(
             [
