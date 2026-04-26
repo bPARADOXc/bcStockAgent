@@ -49,6 +49,8 @@ DEFAULT_CONFIG = {
     "tool_vendors": {
         # Example: "get_stock_data": "alpha_vantage",  # Override category default
     },
+    # NOTE: controls route_to_vendor fallback chain across multiple vendors.
+    "provider_fallback_enabled": True,
 }
 
 
