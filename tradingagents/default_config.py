@@ -1,5 +1,7 @@
 import os
 
+from tradingagents.config import ASHARE_CONFIG
+
 _TRADINGAGENTS_HOME = os.path.join(os.path.expanduser("~"), ".tradingagents")
 
 DEFAULT_CONFIG = {
@@ -47,4 +49,13 @@ DEFAULT_CONFIG = {
     "tool_vendors": {
         # Example: "get_stock_data": "alpha_vantage",  # Override category default
     },
+    # NOTE: controls route_to_vendor fallback chain across multiple vendors.
+    "provider_fallback_enabled": True,
 }
+
+
+# NOTE: include market-oriented presets so callers can switch to A-share quickly.
+DEFAULT_CONFIG["market"] = ASHARE_CONFIG["market"].copy()
+DEFAULT_CONFIG["data_sources"] = ASHARE_CONFIG["data_sources"].copy()
+DEFAULT_CONFIG["risk"] = ASHARE_CONFIG["risk"].copy()
+DEFAULT_CONFIG["llm"] = ASHARE_CONFIG["llm"].copy()
