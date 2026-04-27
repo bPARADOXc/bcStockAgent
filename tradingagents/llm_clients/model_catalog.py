@@ -7,7 +7,7 @@ from typing import Dict, List, Tuple
 ModelOption = Tuple[str, str]
 ProviderModeOptions = Dict[str, Dict[str, List[ModelOption]]]
 
-
+#列的是交互式 CLI 菜单会展示的模型。
 MODEL_OPTIONS: ProviderModeOptions = {
     "openai": {
         "quick": [

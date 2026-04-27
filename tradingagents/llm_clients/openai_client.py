@@ -40,14 +40,18 @@ _PASSTHROUGH_KWARGS = (
     "api_key", "callbacks", "http_client", "http_async_client",
 )
 
-# Provider base URLs and API key env vars
+# Provider base URLs, API key env vars, and optional base URL env overrides
 _PROVIDER_CONFIG = {
-    "xai": ("https://api.x.ai/v1", "XAI_API_KEY"),
-    "deepseek": ("https://api.deepseek.com", "DEEPSEEK_API_KEY"),
-    "qwen": ("https://dashscope-intl.aliyuncs.com/compatible-mode/v1", "DASHSCOPE_API_KEY"),
-    "glm": ("https://api.z.ai/api/paas/v4/", "ZHIPU_API_KEY"),
-    "openrouter": ("https://openrouter.ai/api/v1", "OPENROUTER_API_KEY"),
-    "ollama": ("http://localhost:11434/v1", None),
+    "xai": ("https://api.x.ai/v1", "XAI_API_KEY", None),
+    "deepseek": ("https://api.deepseek.com", "DEEPSEEK_API_KEY", None),
+    "qwen": (
+        "https://dashscope.aliyuncs.com/compatible-mode/v1",
+        "DASHSCOPE_API_KEY",
+        "DASHSCOPE_BASE_URL",
+    ),
+    "glm": ("https://api.z.ai/api/paas/v4/", "ZHIPU_API_KEY", None),
+    "openrouter": ("https://openrouter.ai/api/v1", "OPENROUTER_API_KEY", None),
+    "ollama": ("http://localhost:11434/v1", None, None),
 }
 
 
@@ -77,8 +81,9 @@ class OpenAIClient(BaseLLMClient):
 
         # Provider-specific base URL and auth
         if self.provider in _PROVIDER_CONFIG:
-            base_url, api_key_env = _PROVIDER_CONFIG[self.provider]
-            llm_kwargs["base_url"] = base_url
+            default_base_url, api_key_env, base_url_env = _PROVIDER_CONFIG[self.provider]
+            env_base_url = os.environ.get(base_url_env) if base_url_env else None
+            llm_kwargs["base_url"] = self.base_url or env_base_url or default_base_url
             if api_key_env:
                 api_key = os.environ.get(api_key_env)
                 if api_key:
