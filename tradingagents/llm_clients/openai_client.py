@@ -1,6 +1,7 @@
 import os
 from typing import Any, Optional
 
+from langchain_core.messages import AIMessage
 from langchain_openai import ChatOpenAI
 
 from .base_client import BaseLLMClient, normalize_content
@@ -15,8 +16,55 @@ class NormalizedChatOpenAI(ChatOpenAI):
     downstream handling.
     """
 
+    preserve_reasoning_content: bool = False
+
     def invoke(self, input, config=None, **kwargs):
         return normalize_content(super().invoke(input, config, **kwargs))
+
+    def _create_chat_result(self, response, generation_info=None):
+        result = super()._create_chat_result(response, generation_info)
+
+        if not self.preserve_reasoning_content:
+            return result
+
+        response_dict = (
+            response
+            if isinstance(response, dict)
+            else response.model_dump(
+                exclude={"choices": {"__all__": {"message": {"parsed"}}}}
+            )
+        )
+        choices = response_dict.get("choices") or []
+
+        for generation, choice in zip(result.generations, choices):
+            message = choice.get("message", {}) if isinstance(choice, dict) else {}
+            reasoning_content = message.get("reasoning_content")
+            if reasoning_content is None:
+                continue
+
+            lc_message = generation.message
+            if isinstance(lc_message, AIMessage):
+                lc_message.additional_kwargs["reasoning_content"] = reasoning_content
+
+        return result
+
+    def _get_request_payload(self, input_, *, stop=None, **kwargs):
+        payload = super()._get_request_payload(input_, stop=stop, **kwargs)
+
+        if not self.preserve_reasoning_content or "messages" not in payload:
+            return payload
+
+        messages = self._convert_input(input_).to_messages()
+        for source_message, payload_message in zip(messages, payload["messages"]):
+            if not isinstance(source_message, AIMessage):
+                continue
+            reasoning_content = source_message.additional_kwargs.get(
+                "reasoning_content"
+            )
+            if reasoning_content is not None:
+                payload_message["reasoning_content"] = reasoning_content
+
+        return payload
 
     def with_structured_output(self, schema, *, method=None, **kwargs):
         """Wrap with structured output, defaulting to function_calling for OpenAI.
@@ -78,6 +126,7 @@ class OpenAIClient(BaseLLMClient):
         """Return configured ChatOpenAI instance."""
         self.warn_if_unknown_model()
         llm_kwargs = {"model": self.model}
+        explicit_api_key = self.kwargs.get("api_key")
 
         # Provider-specific base URL and auth
         if self.provider in _PROVIDER_CONFIG:
@@ -85,9 +134,15 @@ class OpenAIClient(BaseLLMClient):
             env_base_url = os.environ.get(base_url_env) if base_url_env else None
             llm_kwargs["base_url"] = self.base_url or env_base_url or default_base_url
             if api_key_env:
-                api_key = os.environ.get(api_key_env)
+                api_key = explicit_api_key or os.environ.get(api_key_env)
                 if api_key:
                     llm_kwargs["api_key"] = api_key
+                else:
+                    raise RuntimeError(
+                        f"Missing {api_key_env} for provider '{self.provider}'. "
+                        f"Set {api_key_env} in your environment or .env file. "
+                        f"OPENAI_API_KEY is not used for provider '{self.provider}'."
+                    )
             else:
                 llm_kwargs["api_key"] = "ollama"
         elif self.base_url:
@@ -95,6 +150,8 @@ class OpenAIClient(BaseLLMClient):
 
         # Forward user-provided kwargs
         for key in _PASSTHROUGH_KWARGS:
+            if key == "api_key" and self.provider in _PROVIDER_CONFIG:
+                continue
             if key in self.kwargs:
                 llm_kwargs[key] = self.kwargs[key]
 
@@ -102,6 +159,9 @@ class OpenAIClient(BaseLLMClient):
         # all model families. Third-party providers use Chat Completions.
         if self.provider == "openai":
             llm_kwargs["use_responses_api"] = True
+
+        if self.provider == "deepseek":
+            llm_kwargs["preserve_reasoning_content"] = True
 
         return NormalizedChatOpenAI(**llm_kwargs)
 

@@ -1,0 +1,6 @@
+results/
+results_*/
+__pycache__/
+*.pyc
+data_*/
+my_factors*/

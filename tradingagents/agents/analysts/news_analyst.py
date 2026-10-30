@@ -5,6 +5,13 @@ from tradingagents.agents.utils.agent_utils import (
     get_language_instruction,
     get_news,
 )
+from tradingagents.agents.utils.ashare_data_tools import (
+    get_cn_cls_telegraph_status,
+    get_cn_cninfo_announcements,
+    get_cn_eastmoney_global_news,
+    get_cn_eastmoney_stock_news,
+    get_cn_f10_announcement_summary,
+)
 from tradingagents.dataflows.config import get_config
 
 
@@ -14,17 +21,20 @@ def _build_news_system_message(language_instruction: str, market_label: str = "A
     NOTE: helper extraction supports deterministic prompt tests.
     """
     return (
-        f"你是{market_label}新闻与政策研究员。"
-        "你需要从公司新闻、行业新闻、宏观政策和监管动态中评估事件冲击。"
+        f"你是{market_label}隔夜事件催化与政策新闻研究员。"
+        "系统主要服务于“今天下午/尾盘买，明天上午卖”的短线交易，"
+        "你要判断新闻、公告、政策和监管信息是否足以支持次日上午溢价，或是否构成隔夜雷。"
         "\n\n"
-        "请使用："
-        "\n"
-        "1) get_news(query,start_date,end_date) 获取公司与行业相关新闻"
-        "\n"
-        "2) get_global_news(curr_date,look_back_days,limit) 获取宏观/政策背景"
+        "工具使用硬要求：除非工具明确 unavailable/error，你必须至少使用可用工具数量的四分之三（向上取整）。"
+        "关键工具包括：get_news、get_global_news、5.1东财个股新闻、5.3东财7x24、7.1巨潮公告、7.2 F10公告摘要。"
+        "财联社旧接口已下线，只能把 5.2 status 作为数据源状态说明。若公告或个股新闻缺失，必须写入 missing_critical_data。"
         "\n\n"
-        "A股语境必须覆盖：证监会/交易所监管动态、问询函、产业政策、北向资金叙事、"
-        "以及潜在停复牌或重大事项公告影响（若可得）。"
+        "隔夜超短新闻判断规则："
+        "1) 优先识别今天盘中/盘后能影响明早集合竞价的催化：政策发布、订单/合同、业绩预告、重组、回购、分红、行业景气新闻。"
+        "2) 必须排查隔夜硬雷：监管问询、处罚、立案、减持/清仓式减持、质押爆仓、停复牌、ST/*ST、业绩暴雷、重大诉讼。"
+        "3) 新闻强度要看可验证性和新鲜度：旧闻、重复转载、泛行业利好、与个股弱相关，不能高估。"
+        "4) 如果新闻已在盘中充分发酵且股价/题材进入一致高潮，明天上午兑现风险要写清楚。"
+        "对 Contract Fulfilled=false、unavailable/error 的工具结果只能说明数据缺口。"
         "\n\n"
         "输出必须为JSON对象（不要输出Markdown代码块），格式如下："
         "\n"
@@ -36,14 +46,19 @@ def _build_news_system_message(language_instruction: str, market_label: str = "A
         '"regulatory_news":[], '
         '"sentiment_score":0,'
         '"event_importance":0,'
+        '"overnight_catalyst_score":0,'
         '"short_term_impact":"...",'
-        '"medium_term_impact":"...",'
+        '"tomorrow_morning_impact":"...",'
+        '"is_news_already_priced_in":"yes/no/unknown",'
+        '"tool_coverage":"used/available",'
+        '"missing_critical_data":[], '
+        '"confidence_pct":0,'
         '"risk_flags":[], '
         '"summary":"...", '
         '"evidence":[]'
         "}"
         "\n\n"
-        "评分要求：sentiment_score 范围 -100 到 100，event_importance 范围 0 到 100。"
+        "评分要求：sentiment_score 范围 -100 到 100；event_importance/overnight_catalyst_score/confidence_pct 范围 0 到 100。"
         + language_instruction
     )
 
@@ -56,6 +71,11 @@ def create_news_analyst(llm):
         tools = [
             get_news,
             get_global_news,
+            get_cn_eastmoney_stock_news,
+            get_cn_eastmoney_global_news,
+            get_cn_cninfo_announcements,
+            get_cn_f10_announcement_summary,
+            get_cn_cls_telegraph_status,
         ]
 
         config = get_config()

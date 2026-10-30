@@ -12,31 +12,37 @@ def create_conservative_debator(llm):
         sentiment_report = state["sentiment_report"]
         news_report = state["news_report"]
         fundamentals_report = state["fundamentals_report"]
+        capital_flow_report = state.get("capital_flow_report", "")
+        disclosure_report = state.get("disclosure_report", "")
 
         trader_decision = state["trader_investment_plan"]
 
-        prompt = f"""As the Conservative Risk Analyst in a China A-share context, prioritize capital protection and rule-compliant execution.
+        prompt = f"""As the Conservative Risk Analyst in a China A-share overnight-swing context, prioritize capital protection and rule-compliant execution.
+The trade horizon is short: buy this afternoon/near the close, sell tomorrow morning. Treat overnight gap risk and next-morning exit risk as first-class risks.
 
 Trader advisory decision:
 {trader_decision}
 
 Debate instructions:
-- Evaluate hard veto risks first: ST/*ST, suspension, delisting signals, severe liquidity risk.
-- Evaluate execution risk: limit-down exit failure, limit-up chase risk, T+1 inability to same-day exit.
-- Evaluate fundamental tail risk: earnings miss, goodwill impairment, regulatory inquiry, pledge/reduction/unlock pressure.
-- Rebut aggressive/neutral assumptions where downside is underpriced.
-- Ensure recommendations preserve human-review-first workflow.
+- Evaluate hard veto risks first: ST/*ST, suspension/delisting signals, severe liquidity risk, major negative disclosure, regulatory inquiry, pledge/reduction/unlock pressure, limit-down exit failure.
+- Evaluate execution risk under A-share rules: T+1 inability to same-day exit, chasing near limit-up, next-morning liquidity collapse, weak auction/late-session acceptance.
+- Penalize setups where key short-term data is missing: K-line/turnover/amount, main funds, industry/theme strength, news/disclosure, LHB/margin/block-trade/chip overhang when relevant.
+- Treat Contract Fulfilled=false, unavailable tools, or diagnostic fallback as evidence-quality risk, not as proof that the risk is absent.
+- Rebut aggressive/neutral assumptions where downside is underpriced; name the exact condition that would remove the veto.
+- Ensure recommendations preserve human-review-first workflow, and state a conservative confidence percentage (0-100%).
 
 Inputs:
 Market report: {market_research_report}
 Sentiment report: {sentiment_report}
 News/policy report: {news_report}
 Fundamentals report: {fundamentals_report}
+Capital flow/chip report: {capital_flow_report}
+Disclosure/research report: {disclosure_report}
 History: {history}
 Aggressive latest: {current_aggressive_response}
 Neutral latest: {current_neutral_response}
 
-Output should be conversational but explicit about risk triggers and veto conditions.
+Output should be conversational but explicit about risk triggers, no-trade conditions, and tomorrow-morning exit triggers.
 """
 
         response = llm.invoke(prompt)

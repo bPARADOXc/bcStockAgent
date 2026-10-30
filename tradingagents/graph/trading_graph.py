@@ -37,6 +37,39 @@ from tradingagents.agents.utils.agent_utils import (
     get_insider_transactions,
     get_global_news
 )
+from tradingagents.agents.utils.ashare_data_tools import (
+    get_cn_block_trades,
+    get_cn_baidu_kline_ma,
+    get_cn_cls_telegraph_status,
+    get_cn_cninfo_announcements,
+    get_cn_concept_blocks,
+    get_cn_daily_dragon_tiger,
+    get_cn_dividend_history,
+    get_cn_dragon_tiger_board,
+    get_cn_eastmoney_global_news,
+    get_cn_eastmoney_reports,
+    get_cn_eastmoney_guba_sentiment,
+    get_cn_eastmoney_stock_news,
+    get_cn_eastmoney_stock_info,
+    get_cn_f10_announcement_summary,
+    get_cn_fund_flow_120d,
+    get_cn_holder_changes,
+    get_cn_industry_comparison,
+    get_cn_intraday_fund_flow,
+    get_cn_iwencai_report_search,
+    get_cn_lockup_expiry,
+    get_cn_margin_trading,
+    get_cn_mootdx_f10,
+    get_cn_mootdx_finance_snapshot,
+    get_cn_mootdx_market_data,
+    get_cn_northbound_flow,
+    get_cn_signal_summary,
+    get_cn_sina_financial_reports,
+    get_cn_tencent_quote,
+    get_cn_ths_eps_forecast,
+    get_cn_ths_hot_reason,
+    get_cn_xueqiu_sentiment,
+)
 
 from .checkpointer import checkpoint_step, clear_checkpoint, get_checkpointer, thread_id
 from .conditional_logic import ConditionalLogic
@@ -51,7 +84,7 @@ class TradingAgentsGraph:
 
     def __init__(
         self,
-        selected_analysts=["market", "social", "news", "fundamentals"],
+        selected_analysts=["market", "social", "news", "fundamentals", "capital_flow", "disclosure"],
         debug=False,
         config: Dict[str, Any] = None,
         callbacks: Optional[List] = None,
@@ -160,12 +193,22 @@ class TradingAgentsGraph:
                     get_stock_data,
                     # Technical indicators
                     get_indicators,
+                    get_cn_mootdx_market_data,
+                    get_cn_tencent_quote,
+                    get_cn_baidu_kline_ma,
+                    get_cn_industry_comparison,
                 ]
             ),
             "social": ToolNode(
                 [
                     # News tools for social media analysis
                     get_news,
+                    get_cn_ths_hot_reason,
+                    get_cn_concept_blocks,
+                    get_cn_eastmoney_stock_news,
+                    get_cn_eastmoney_global_news,
+                    get_cn_eastmoney_guba_sentiment,
+                    get_cn_xueqiu_sentiment,
                 ]
             ),
             "news": ToolNode(
@@ -174,6 +217,11 @@ class TradingAgentsGraph:
                     get_news,
                     get_global_news,
                     get_insider_transactions,
+                    get_cn_eastmoney_stock_news,
+                    get_cn_eastmoney_global_news,
+                    get_cn_cninfo_announcements,
+                    get_cn_f10_announcement_summary,
+                    get_cn_cls_telegraph_status,
                 ]
             ),
             "fundamentals": ToolNode(
@@ -183,6 +231,41 @@ class TradingAgentsGraph:
                     get_balance_sheet,
                     get_cashflow,
                     get_income_statement,
+                    get_cn_tencent_quote,
+                    get_cn_dividend_history,
+                    get_cn_mootdx_finance_snapshot,
+                    get_cn_eastmoney_stock_info,
+                    get_cn_sina_financial_reports,
+                ]
+            ),
+            "capital_flow": ToolNode(
+                [
+                    get_cn_mootdx_market_data,
+                    get_cn_tencent_quote,
+                    get_cn_northbound_flow,
+                    get_cn_intraday_fund_flow,
+                    get_cn_dragon_tiger_board,
+                    get_cn_lockup_expiry,
+                    get_cn_industry_comparison,
+                    get_cn_daily_dragon_tiger,
+                    get_cn_signal_summary,
+                    get_cn_margin_trading,
+                    get_cn_block_trades,
+                    get_cn_holder_changes,
+                    get_cn_fund_flow_120d,
+                ]
+            ),
+            "disclosure": ToolNode(
+                [
+                    get_cn_eastmoney_reports,
+                    get_cn_ths_eps_forecast,
+                    get_cn_iwencai_report_search,
+                    get_cn_mootdx_f10,
+                    get_cn_cninfo_announcements,
+                    get_cn_f10_announcement_summary,
+                    get_cn_sina_financial_reports,
+                    get_cn_mootdx_finance_snapshot,
+                    get_cn_eastmoney_stock_info,
                 ]
             ),
         }
@@ -355,6 +438,8 @@ class TradingAgentsGraph:
             "sentiment_report": final_state["sentiment_report"],
             "news_report": final_state["news_report"],
             "fundamentals_report": final_state["fundamentals_report"],
+            "capital_flow_report": final_state.get("capital_flow_report", ""),
+            "disclosure_report": final_state.get("disclosure_report", ""),
             "investment_debate_state": {
                 "bull_history": final_state["investment_debate_state"]["bull_history"],
                 "bear_history": final_state["investment_debate_state"]["bear_history"],

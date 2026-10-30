@@ -12,6 +12,8 @@ def test_market_prompt_contains_ashare_constraints_and_json_shape():
     assert "T+1" in msg
     assert "停复牌" in msg
     assert "ST风险" in msg
+    assert "明天上午" in msg
+    assert "四分之三" in msg
 
     # NOTE: ensure required JSON output fields are present.
     for key in (
@@ -19,6 +21,8 @@ def test_market_prompt_contains_ashare_constraints_and_json_shape():
         '"technical_score"',
         '"risk_flags"',
         '"evidence"',
+        '"missing_critical_data"',
+        '"confidence_pct"',
     ):
         assert key in msg
 

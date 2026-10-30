@@ -1,23 +1,34 @@
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from tradingagents.agents.utils.agent_utils import build_instrument_context, get_language_instruction, get_news
+from tradingagents.agents.utils.ashare_data_tools import (
+    get_cn_concept_blocks,
+    get_cn_eastmoney_global_news,
+    get_cn_eastmoney_guba_sentiment,
+    get_cn_eastmoney_stock_news,
+    get_cn_ths_hot_reason,
+    get_cn_xueqiu_sentiment,
+)
 from tradingagents.dataflows.config import get_config
 
 
 def _build_social_system_message(language_instruction: str, market_label: str = "A股") -> str:
     """Build market-specific social sentiment analyst prompt."""
     return (
-        f"你是{market_label}舆情分析师。"
-        "你需要综合公司相关新闻、讨论热度和情绪方向，识别短线情绪驱动与谣言风险。"
+        f"你是{market_label}隔夜超短舆情与题材热度分析师。"
+        "系统主要服务于“今天下午/尾盘买，明天上午卖”的短线交易，"
+        "你要判断目标股是否站在当下主线题材、情绪是否过热、次日是否可能有溢价。"
         "\n\n"
-        "请使用 get_news(query,start_date,end_date) 搜集可得的舆情/媒体线索，并区分："
-        "\n"
-        "- 多头观点"
-        "\n"
-        "- 空头观点"
-        "\n"
-        "- 未证实传闻"
+        "工具使用硬要求：除非工具明确 unavailable/error，你必须至少使用可用工具数量的四分之三（向上取整）。"
+        "关键工具包括：get_news、3.1同花顺热点、3.3概念板块、5.1东财个股新闻、5.3东财7x24、"
+        "东方财富股吧、雪球。若股吧/雪球缺失，必须写入 missing_critical_data，不得等同于无人关注。"
         "\n\n"
-        "A股语境必须覆盖：股吧/雪球/东方财富讨论倾向、互动易问答与公告解读（若可得）。"
+        "隔夜超短舆情核心判断："
+        "1) 先找主线：AI算力、机器人、低空、芯片、新能源、国改、业绩线等热点只作例子，必须以当天工具返回为准。"
+        "目标股若只是蹭概念、没有板块联动或没有资金确认，不能给高分。"
+        "2) 判断情绪周期：题材扩散、龙头强度、跟风高度、是否高潮后分歧；高潮一致且高位缩量要警惕次日兑现。"
+        "3) 股吧/雪球/新闻只作为情绪证据，不能把传闻当事实；必须区分多头观点、空头观点、未证实传闻。"
+        "4) 对今天下午买入，最重要的是题材热度仍在、关注度上升但未极端拥挤；明天上午若低开无承接或热点退潮，应优先卖出。"
+        "对 Contract Fulfilled=false、unavailable/error 的工具结果只能说明数据缺口。"
         "\n\n"
         "输出必须为JSON对象（不要输出Markdown代码块），格式如下："
         "\n"
@@ -25,15 +36,22 @@ def _build_social_system_message(language_instruction: str, market_label: str = 
         '"symbol":"...",'
         '"sentiment_score":0,'
         '"attention_score":0,'
+        '"theme_heat_score":0,'
+        '"crowding_risk":"low/medium/high",'
+        '"intraday_swing_sentiment":"strong/medium/weak/invalid",'
         '"main_topics":[], '
         '"bullish_points":[], '
         '"bearish_points":[], '
         '"rumor_risk":"low/medium/high",'
+        '"tomorrow_morning_sentiment_risk":"...",'
+        '"tool_coverage":"used/available",'
+        '"missing_critical_data":[], '
+        '"confidence_pct":0,'
         '"evidence":[], '
         '"summary":"..."'
         "}"
         "\n\n"
-        "评分要求：sentiment_score 范围 -100 到 100；attention_score 范围 0 到 100。"
+        "评分要求：sentiment_score 范围 -100 到 100；attention_score/theme_heat_score/confidence_pct 范围 0 到 100。"
         + language_instruction
     )
 
@@ -45,6 +63,12 @@ def create_social_media_analyst(llm):
 
         tools = [
             get_news,
+            get_cn_ths_hot_reason,
+            get_cn_concept_blocks,
+            get_cn_eastmoney_stock_news,
+            get_cn_eastmoney_global_news,
+            get_cn_eastmoney_guba_sentiment,
+            get_cn_xueqiu_sentiment,
         ]
 
         config = get_config()

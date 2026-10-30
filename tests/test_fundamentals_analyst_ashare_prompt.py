@@ -14,6 +14,8 @@ def test_fundamentals_prompt_contains_ashare_financial_risk_terms():
     assert "商誉减值" in msg
     assert "应收账款" in msg
     assert "存货" in msg
+    assert "隔夜" in msg
+    assert "四分之三" in msg
 
 
 @pytest.mark.unit
@@ -28,6 +30,8 @@ def test_fundamentals_prompt_contains_required_json_fields():
         '"cashflow_score"',
         '"balance_sheet_score"',
         '"financial_quality_risk"',
+        '"missing_critical_data"',
+        '"confidence_pct"',
         '"evidence"',
     ):
         assert key in msg

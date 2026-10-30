@@ -33,6 +33,17 @@ from .cn_data_placeholder import (
     get_cn_global_news,
     get_cn_insider_transactions,
 )
+from .a_stock_data_provider import (
+    get_astock_stock_data,
+    get_astock_indicator,
+    get_astock_fundamentals,
+    get_astock_balance_sheet,
+    get_astock_cashflow,
+    get_astock_income_statement,
+    get_astock_news,
+    get_astock_global_news,
+    get_astock_insider_equivalent,
+)
 from .alpha_vantage_common import AlphaVantageRateLimitError
 from .stock_code_mapper import normalize_ashare_symbol
 
@@ -75,6 +86,7 @@ TOOLS_CATEGORIES = {
 VENDOR_LIST = [
     "yfinance",
     "alpha_vantage",
+    "a_stock_data",
     "cn_placeholder",
 ]
 
@@ -82,49 +94,58 @@ VENDOR_LIST = [
 VENDOR_METHODS = {
     # core_stock_apis
     "get_stock_data": {
+        "a_stock_data": get_astock_stock_data,
         "alpha_vantage": get_alpha_vantage_stock,
         "yfinance": get_YFin_data_online,
         "cn_placeholder": get_cn_stock_data,
     },
     # technical_indicators
     "get_indicators": {
+        "a_stock_data": get_astock_indicator,
         "alpha_vantage": get_alpha_vantage_indicator,
         "yfinance": get_stock_stats_indicators_window,
         "cn_placeholder": get_cn_indicator,
     },
     # fundamental_data
     "get_fundamentals": {
+        "a_stock_data": get_astock_fundamentals,
         "alpha_vantage": get_alpha_vantage_fundamentals,
         "yfinance": get_yfinance_fundamentals,
         "cn_placeholder": get_cn_fundamentals,
     },
     "get_balance_sheet": {
+        "a_stock_data": get_astock_balance_sheet,
         "alpha_vantage": get_alpha_vantage_balance_sheet,
         "yfinance": get_yfinance_balance_sheet,
         "cn_placeholder": get_cn_balance_sheet,
     },
     "get_cashflow": {
+        "a_stock_data": get_astock_cashflow,
         "alpha_vantage": get_alpha_vantage_cashflow,
         "yfinance": get_yfinance_cashflow,
         "cn_placeholder": get_cn_cashflow,
     },
     "get_income_statement": {
+        "a_stock_data": get_astock_income_statement,
         "alpha_vantage": get_alpha_vantage_income_statement,
         "yfinance": get_yfinance_income_statement,
         "cn_placeholder": get_cn_income_statement,
     },
     # news_data
     "get_news": {
+        "a_stock_data": get_astock_news,
         "alpha_vantage": get_alpha_vantage_news,
         "yfinance": get_news_yfinance,
         "cn_placeholder": get_cn_news,
     },
     "get_global_news": {
+        "a_stock_data": get_astock_global_news,
         "yfinance": get_global_news_yfinance,
         "alpha_vantage": get_alpha_vantage_global_news,
         "cn_placeholder": get_cn_global_news,
     },
     "get_insider_transactions": {
+        "a_stock_data": get_astock_insider_equivalent,
         "alpha_vantage": get_alpha_vantage_insider_transactions,
         "yfinance": get_yfinance_insider_transactions,
         "cn_placeholder": get_cn_insider_transactions,

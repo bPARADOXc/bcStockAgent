@@ -18,13 +18,13 @@ class Reflector:
         into future agent prompts without bloating the context window.
         """
         return (
-            "You are a trading analyst reviewing your own past decision now that the outcome is known.\n"
+            "You are an A-share overnight-swing analyst reviewing your own past decision now that the outcome is known.\n"
             "Write exactly 2-4 sentences of plain prose (no bullets, no headers, no markdown).\n\n"
             "Cover in order:\n"
             "1. Was the directional call correct? (cite the alpha figure)\n"
-            "2. Which part of the investment thesis held or failed?\n"
-            "3. One concrete lesson to apply to the next similar analysis.\n\n"
-            "Be specific and terse. Your output will be stored verbatim in a decision log "
+            "2. Which short-term setup element held or failed: theme/leader strength, capital flow, volume-price structure, catalyst/disclosure risk, or next-morning exit liquidity?\n"
+            "3. One concrete lesson to apply to the next afternoon-buy / tomorrow-morning-sell analysis.\n\n"
+            "Be specific and terse, and call out any missing key data that should have lowered confidence. Your output will be stored verbatim in a decision log "
             "and re-read by future analysts, so every word must earn its place."
         )
 
@@ -45,7 +45,7 @@ class Reflector:
                 "human",
                 (
                     f"Raw return: {raw_return:+.1%}\n"
-                    f"Alpha vs SPY: {alpha_return:+.1%}\n\n"
+                    f"Alpha vs benchmark: {alpha_return:+.1%}\n\n"
                     f"Final Decision:\n{final_decision}"
                 ),
             ),

@@ -30,7 +30,7 @@ from pydantic import BaseModel, Field
 
 
 class PortfolioRating(str, Enum):
-    """5-tier rating used by the Research Manager and Portfolio Manager."""
+    """5-tier overnight-swing rating used by the Research and Portfolio managers."""
 
     BUY = "Buy"
     OVERWEIGHT = "Overweight"
@@ -59,7 +59,7 @@ class TraderAction(str, Enum):
 
 
 class ResearchPlan(BaseModel):
-    """Structured investment plan produced by the Research Manager.
+    """Structured overnight-swing plan produced by the Research Manager.
 
     Hand-off to the Trader: the recommendation pins the directional view,
     the rationale captures which side of the bull/bear debate carried the
@@ -69,10 +69,10 @@ class ResearchPlan(BaseModel):
 
     recommendation: PortfolioRating = Field(
         description=(
-            "The investment recommendation. Exactly one of Buy / Overweight / "
-            "Hold / Underweight / Sell. Reserve Hold for situations where the "
-            "evidence on both sides is genuinely balanced; otherwise commit to "
-            "the side with the stronger arguments."
+            "The overnight A-share recommendation. Exactly one of Buy / "
+            "Overweight / Hold / Underweight / Sell. Reserve Hold for "
+            "situations where the evidence on both sides is genuinely balanced; "
+            "otherwise commit to the side with the stronger arguments."
         ),
     )
     rationale: str = Field(
@@ -85,7 +85,16 @@ class ResearchPlan(BaseModel):
     strategic_actions: str = Field(
         description=(
             "Concrete steps for the trader to implement the recommendation, "
-            "including position sizing guidance consistent with the rating."
+            "including this-afternoon entry conditions, tomorrow-morning exit "
+            "triggers, stop-loss references, and sizing guidance consistent "
+            "with the rating."
+        ),
+    )
+    confidence: int = Field(
+        default=0,
+        description=(
+            "Confidence percentage from 0 to 100 for the overnight-swing plan. "
+            "Use a lower value when key A-share short-term indicators are missing."
         ),
     )
 
@@ -98,6 +107,8 @@ def render_research_plan(plan: ResearchPlan) -> str:
         f"**Rationale**: {plan.rationale}",
         "",
         f"**Strategic Actions**: {plan.strategic_actions}",
+        "",
+        f"**Confidence**: {plan.confidence}%",
     ])
 
 
@@ -109,10 +120,10 @@ def render_research_plan(plan: ResearchPlan) -> str:
 class TraderProposal(BaseModel):
     """Structured transaction proposal produced by the Trader.
 
-    The trader reads the Research Manager's investment plan and the analyst
-    reports, then turns them into a concrete transaction: what action to
-    take, the reasoning that justifies it, and the practical levels for
-    entry, stop-loss, and sizing.
+    The trader reads the Research Manager's overnight-swing plan and the
+    analyst reports, then turns them into a concrete transaction: what action
+    to take, the reasoning that justifies it, and the practical levels for
+    entry, stop-loss, tomorrow-morning exit, and sizing.
     """
 
     action: TraderAction = Field(
@@ -156,7 +167,7 @@ class AShareTraderDecision(BaseModel):
     name: Optional[str] = Field(default=None, description="Security name when available.")
     market: str = Field(default="A股", description="Market label; use 'A股' for CN mode.")
     decision: TraderDecisionAction = Field(description="One of buy/sell/hold/watch.")
-    confidence: int = Field(description="Decision confidence score from 0 to 100.")
+    confidence: int = Field(description="Decision confidence percentage from 0 to 100.")
     suggested_position_ratio: float = Field(description="Suggested position ratio from 0 to 1.")
     stop_loss_reference: Optional[str] = Field(default=None, description="Risk stop reference.")
     take_profit_reference: Optional[str] = Field(default=None, description="Take-profit reference.")
@@ -172,7 +183,7 @@ def render_ashare_trader_decision(decision: AShareTraderDecision) -> str:
         f"**Symbol**: {decision.symbol}",
         f"**Market**: {decision.market}",
         f"**Decision**: {decision.decision.value}",
-        f"**Confidence**: {decision.confidence}",
+        f"**Confidence**: {decision.confidence}%",
         f"**Suggested Position Ratio**: {decision.suggested_position_ratio}",
         f"**Summary**: {decision.summary}",
         f"**Human Review Required**: {decision.human_review_required}",
@@ -236,15 +247,18 @@ class PortfolioDecision(BaseModel):
     )
     executive_summary: str = Field(
         description=(
-            "A concise action plan covering entry strategy, position sizing, "
-            "key risk levels, and time horizon. Two to four sentences."
+            "A concise overnight-swing action plan covering this-afternoon "
+            "entry strategy, position sizing, key risk levels, tomorrow-morning "
+            "exit triggers, and time horizon. Two to four sentences."
         ),
     )
     investment_thesis: str = Field(
         description=(
             "Detailed reasoning anchored in specific evidence from the analysts' "
-            "debate. If prior lessons are referenced in the prompt context, "
-            "incorporate them; otherwise rely solely on the current analysis."
+            "debate, especially theme strength, capital flow, volume-price "
+            "structure, catalyst/disclosure risk, and exit liquidity. If prior "
+            "lessons are referenced in the prompt context, incorporate them; "
+            "otherwise rely solely on the current analysis."
         ),
     )
     price_target: Optional[float] = Field(
@@ -253,7 +267,14 @@ class PortfolioDecision(BaseModel):
     )
     time_horizon: Optional[str] = Field(
         default=None,
-        description="Optional recommended holding period, e.g. '3-6 months'.",
+        description="Optional recommended holding period, e.g. 'sell tomorrow morning' or '1 trading day'.",
+    )
+    confidence: int = Field(
+        default=0,
+        description=(
+            "Final decision confidence percentage from 0 to 100. Must reflect evidence quality, "
+            "tool coverage, and A-share overnight execution risk."
+        ),
     )
 
 
@@ -271,6 +292,8 @@ def render_pm_decision(decision: PortfolioDecision) -> str:
         f"**Executive Summary**: {decision.executive_summary}",
         "",
         f"**Investment Thesis**: {decision.investment_thesis}",
+        "",
+        f"**Confidence**: {decision.confidence}%",
     ]
     if decision.price_target is not None:
         parts.extend(["", f"**Price Target**: {decision.price_target}"])

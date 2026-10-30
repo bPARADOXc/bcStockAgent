@@ -21,5 +21,6 @@ def test_render_ashare_trader_decision_includes_required_fields():
     )
     md = render_ashare_trader_decision(d)
     # NOTE: ensure mandatory review marker and stop-signal remain in rendered output.
+    assert "**Confidence**: 55%" in md
     assert "**Human Review Required**: True" in md
     assert "FINAL TRANSACTION PROPOSAL: **WATCH**" in md

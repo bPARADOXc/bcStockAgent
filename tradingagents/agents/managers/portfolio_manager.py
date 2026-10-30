@@ -39,18 +39,19 @@ def create_portfolio_manager(llm):
             else ""
         )
 
-        prompt = f"""As the Portfolio Manager, synthesize the risk analysts' debate and deliver the final trading decision.
+        prompt = f"""As the Portfolio Manager, synthesize the risk analysts' debate and deliver the final A-share overnight-swing decision.
+The system is mainly used for short-term trades: buy this afternoon/near the close, sell tomorrow morning. Do not convert this into a long-term portfolio recommendation.
 
 {instrument_context}
 
 ---
 
-**Rating Scale** (use exactly one):
-- **Buy**: Strong conviction to enter or add to position
-- **Overweight**: Favorable outlook, gradually increase exposure
-- **Hold**: Maintain current position, no action needed
-- **Underweight**: Reduce exposure, take partial profits
-- **Sell**: Exit position or avoid entry
+**Rating Scale** (use exactly one, interpreted for the overnight horizon):
+- **Buy**: Afternoon/close entry is justified and tomorrow-morning exit plan is clear
+- **Overweight**: Favorable but imperfect; only small/reduced sizing is justified
+- **Hold**: No fresh entry; observe or maintain existing plan
+- **Underweight**: Reduce/avoid; risk-reward is not clean enough for overnight entry
+- **Sell**: Exit/avoid; hard risk or poor next-morning exit profile dominates
 
 **Context:**
 - Research Manager's investment plan: **{research_plan}**
@@ -61,7 +62,13 @@ def create_portfolio_manager(llm):
 
 ---
 
-Be decisive and ground every conclusion in specific evidence from the analysts.{get_language_instruction()}"""
+Be decisive and ground every conclusion in specific evidence from the analysts.
+Final output must include confidence as a 0-100 percentage. Confidence must drop when:
+- key short-term indicators are missing,
+- analysts report missing_critical_data,
+- any important tool reports Contract Fulfilled=false or diagnostic fallback,
+- risk debate identifies T+1, limit-down, liquidity, ST/suspension, or disclosure veto risk.
+Executive summary must include afternoon entry condition, tomorrow-morning exit/stop condition, and max suggested exposure.{get_language_instruction()}"""
 
         final_trade_decision = invoke_structured_or_freetext(
             structured_llm,

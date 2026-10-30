@@ -2,10 +2,14 @@ import os
 
 from tradingagents.config import ASHARE_CONFIG
 
-_TRADINGAGENTS_HOME = os.path.join(os.path.expanduser("~"), ".tradingagents")
+_PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+_TRADINGAGENTS_HOME = os.getenv(
+    "TRADINGAGENTS_HOME",
+    os.path.join(_PROJECT_ROOT, ".tradingagents"),
+)
 
 DEFAULT_CONFIG = {
-    "project_dir": os.path.abspath(os.path.join(os.path.dirname(__file__), ".")),
+    "project_dir": _PROJECT_ROOT,
     "results_dir": os.getenv("TRADINGAGENTS_RESULTS_DIR", os.path.join(_TRADINGAGENTS_HOME, "logs")),
     "data_cache_dir": os.getenv("TRADINGAGENTS_CACHE_DIR", os.path.join(_TRADINGAGENTS_HOME, "cache")),
     "memory_log_path": os.getenv("TRADINGAGENTS_MEMORY_LOG_PATH", os.path.join(_TRADINGAGENTS_HOME, "memory", "trading_memory.md")),
@@ -14,9 +18,9 @@ DEFAULT_CONFIG = {
     # Pending entries are never pruned. None disables rotation entirely.
     "memory_log_max_entries": None,
     # LLM settings
-    "llm_provider": "openai",
-    "deep_think_llm": "gpt-5.4",
-    "quick_think_llm": "gpt-5.4-mini",
+    "llm_provider": "deepseek",
+    "deep_think_llm": "deepseek-v4-pro",
+    "quick_think_llm": "deepseek-v4-flash",
     # When None, each provider's client falls back to its own default endpoint
     # (api.openai.com for OpenAI, generativelanguage.googleapis.com for Gemini, ...).
     # The CLI overrides this per provider when the user picks one. Keeping a
@@ -56,6 +60,7 @@ DEFAULT_CONFIG = {
 
 # NOTE: include market-oriented presets so callers can switch to A-share quickly.
 DEFAULT_CONFIG["market"] = ASHARE_CONFIG["market"].copy()
+DEFAULT_CONFIG["data_vendors"] = ASHARE_CONFIG["data_vendors"].copy()
 DEFAULT_CONFIG["data_sources"] = ASHARE_CONFIG["data_sources"].copy()
 DEFAULT_CONFIG["risk"] = ASHARE_CONFIG["risk"].copy()
 DEFAULT_CONFIG["llm"] = ASHARE_CONFIG["llm"].copy()

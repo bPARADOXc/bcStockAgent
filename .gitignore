@@ -217,3 +217,26 @@ __marimo__/
 
 # Cache
 **/data_cache/
+
+# Local research state, downloaded materials and generated market outputs
+.tradingagents/
+reports/
+temp_download/
+a_share_main_board_*_candidates*.csv
+a_share_main_board_*_codes*.txt
+.env.*
+!.env.example
+!.env.enterprise.example
+
+# Mobile build state and machine-specific settings
+.gradle/
+local.properties
+*.apk
+*.aab
+*.jks
+*.keystore
+DerivedData/
+xcuserdata/
+*.xcuserstate
+# Installed skill registry is local machine state
+skills/.skills_store_lock.json

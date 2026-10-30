@@ -17,11 +17,18 @@ ASHARE_CONFIG = {
     },
     # Data-source routing preferences (provider names only, no API keys here).
     "data_sources": {
-        "quote_provider": "akshare",
-        "fundamentals_provider": "tushare",
+        "quote_provider": "a_stock_data",
+        "fundamentals_provider": "a_stock_data",
         "news_provider": "eastmoney",
         "announcement_provider": "cninfo",
-        "social_provider": "eastmoney_guba",
+        "social_provider": "a_stock_data",
+    },
+    # TradingAgents route_to_vendor category defaults for A-share mode.
+    "data_vendors": {
+        "core_stock_apis": "a_stock_data",
+        "technical_indicators": "a_stock_data",
+        "fundamental_data": "a_stock_data",
+        "news_data": "a_stock_data",
     },
     # A-share risk policy defaults (advisory-only system, no auto execution).
     "risk": {

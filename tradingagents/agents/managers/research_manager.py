@@ -19,20 +19,23 @@ def create_research_manager(llm):
 
         investment_debate_state = state["investment_debate_state"]
 
-        prompt = f"""As the Research Manager and debate facilitator, your role is to critically evaluate this round of debate and deliver a clear, actionable investment plan for the trader.
+        prompt = f"""As the Research Manager and debate facilitator, your role is to evaluate this round of debate and deliver a clear, actionable overnight-swing plan for the trader.
+The system is mainly used for short-term A-share trades: buy this afternoon/near the close, sell tomorrow morning. Do not drift into a long-term investment recommendation.
 
 {instrument_context}
 
 ---
 
-**Rating Scale** (use exactly one):
-- **Buy**: Strong conviction in the bull thesis; recommend taking or growing the position
-- **Overweight**: Constructive view; recommend gradually increasing exposure
-- **Hold**: Balanced view; recommend maintaining the current position
-- **Underweight**: Cautious view; recommend trimming exposure
-- **Sell**: Strong conviction in the bear thesis; recommend exiting or avoiding the position
+**Rating Scale** (use exactly one, interpreted for the overnight horizon):
+- **Buy**: Conditions support a small, rule-bound afternoon/close entry for tomorrow-morning exit
+- **Overweight**: Constructive but not clean enough for a full signal; only consider reduced sizing
+- **Hold**: No new entry; maintain observation or existing plan
+- **Underweight**: Avoid new entry or reduce if already holding
+- **Sell**: Exit/avoid; overnight risk dominates
 
-Commit to a clear stance whenever the debate's strongest arguments warrant one; reserve Hold for situations where the evidence on both sides is genuinely balanced.
+Commit to a clear stance whenever the debate's strongest arguments warrant one; reserve Hold for genuinely balanced evidence.
+Require an explicit confidence percentage from 0-100. Lower confidence when key indicators are missing, when analysts report Contract Fulfilled=false, or when tool coverage is below three quarters.
+The plan must name the minimum conditions for an afternoon entry and tomorrow-morning exit triggers.
 
 ---
 

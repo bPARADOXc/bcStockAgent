@@ -10,6 +10,12 @@ def test_provider_envelope_defaults_are_stable():
     assert env.data == {}
     assert env.errors == []
     assert env.evidence == []
+    assert env.contract_fulfilled is False
+    assert env.fallback_level == "none"
+
+    ok_env = ProviderEnvelope(status="ok", source="x", as_of="")
+    assert ok_env.contract_fulfilled is True
+    assert ok_env.fallback_level == "none"
 
 
 @pytest.mark.unit

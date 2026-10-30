@@ -12,6 +12,8 @@ def test_news_prompt_contains_ashare_regulatory_terms_and_schema_keys():
     assert "证监会" in msg
     assert "问询函" in msg
     assert "产业政策" in msg
+    assert "隔夜" in msg
+    assert "四分之三" in msg
 
     # NOTE: lock required JSON fields for downstream parser alignment.
     for key in (
@@ -20,6 +22,8 @@ def test_news_prompt_contains_ashare_regulatory_terms_and_schema_keys():
         '"regulatory_news"',
         '"sentiment_score"',
         '"event_importance"',
+        '"missing_critical_data"',
+        '"confidence_pct"',
         '"risk_flags"',
         '"evidence"',
     ):
@@ -34,6 +38,8 @@ def test_social_prompt_contains_ashare_sentiment_sources_and_schema_keys():
     assert "股吧" in msg
     assert "雪球" in msg
     assert "互动易" in msg
+    assert "明天上午" in msg
+    assert "四分之三" in msg
 
     # NOTE: lock required JSON fields for downstream parser alignment.
     for key in (
@@ -41,6 +47,8 @@ def test_social_prompt_contains_ashare_sentiment_sources_and_schema_keys():
         '"attention_score"',
         '"main_topics"',
         '"rumor_risk"',
+        '"missing_critical_data"',
+        '"confidence_pct"',
         '"evidence"',
     ):
         assert key in msg

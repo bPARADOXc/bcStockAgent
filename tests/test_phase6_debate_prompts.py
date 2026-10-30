@@ -4,6 +4,7 @@ import pytest
 
 from tradingagents.agents.researchers.bull_researcher import create_bull_researcher
 from tradingagents.agents.researchers.bear_researcher import create_bear_researcher
+from tradingagents.agents.risk_mgmt.neutral_debator import create_neutral_debator
 from tradingagents.agents.risk_mgmt.conservative_debator import create_conservative_debator
 
 
@@ -49,6 +50,8 @@ def test_bull_prompt_contains_ashare_constraints():
     # NOTE: lock A-share execution-risk wording in bull prompt.
     assert "T+1" in captured["prompt"]
     assert "北向资金" in captured["prompt"]
+    assert "tomorrow morning" in captured["prompt"]
+    assert "confidence percentage" in captured["prompt"]
 
 
 @pytest.mark.unit
@@ -81,3 +84,21 @@ def test_conservative_risk_prompt_contains_veto_terms():
     # NOTE: lock hard-veto wording in conservative prompt.
     assert "ST/*ST" in captured["prompt"]
     assert "limit-down" in captured["prompt"]
+    assert "Contract Fulfilled=false" in captured["prompt"]
+    assert "conservative confidence percentage" in captured["prompt"]
+
+
+@pytest.mark.unit
+def test_neutral_risk_prompt_contains_overnight_balance_terms():
+    llm = MagicMock()
+    captured = {}
+
+    def _capture(prompt):
+        captured["prompt"] = prompt
+        return MagicMock(content="ok")
+    llm.invoke.side_effect = _capture
+    node = create_neutral_debator(llm)
+    node(_base_state())
+    assert "overnight-swing" in captured["prompt"]
+    assert "tomorrow-morning exit" in captured["prompt"]
+    assert "neutral confidence percentage" in captured["prompt"]

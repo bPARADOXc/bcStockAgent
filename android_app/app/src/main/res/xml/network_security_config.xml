@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false" />
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">qt.gtimg.cn</domain>
+        <domain includeSubdomains="true">quotes.sina.cn</domain>
+        <domain includeSubdomains="true">push2his.eastmoney.com</domain>
+        <domain includeSubdomains="true">push2.eastmoney.com</domain>
+        <domain includeSubdomains="true">finance.pae.baidu.com</domain>
+    </domain-config>
+</network-security-config>

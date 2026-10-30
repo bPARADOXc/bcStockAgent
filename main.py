@@ -1,31 +1,27 @@
-from tradingagents.graph.trading_graph import TradingAgentsGraph
-from tradingagents.default_config import DEFAULT_CONFIG
+"""A-share research example. Configure .env before running python main.py."""
+
+from copy import deepcopy
 
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
-load_dotenv()
+from tradingagents.default_config import DEFAULT_CONFIG
+from tradingagents.graph.trading_graph import TradingAgentsGraph
 
-# Create a custom config
-config = DEFAULT_CONFIG.copy()
-config["deep_think_llm"] = "gpt-5.4-mini"  # Use a different model
-config["quick_think_llm"] = "gpt-5.4-mini"  # Use a different model
-config["max_debate_rounds"] = 1  # Increase debate rounds
 
-# Configure data vendors (default uses yfinance, no extra API keys needed)
-config["data_vendors"] = {
-    "core_stock_apis": "yfinance",           # Options: alpha_vantage, yfinance
-    "technical_indicators": "yfinance",      # Options: alpha_vantage, yfinance
-    "fundamental_data": "yfinance",          # Options: alpha_vantage, yfinance
-    "news_data": "yfinance",                 # Options: alpha_vantage, yfinance
-}
+def main():
+    load_dotenv()
+    config = deepcopy(DEFAULT_CONFIG)
+    config["provider_fallback_enabled"] = False
+    config["output_language"] = "Chinese"
+    # Set llm_provider, quick_think_llm and deep_think_llm here if needed.
+    agent = TradingAgentsGraph(debug=False, config=config)
+    # Historical dates do not guarantee point-in-time data for every source.
+    # Research only: no broker orders are submitted.
+    state, signal = agent.propagate("600519.SH", "2026-10-29")
+    print("最终信号：", signal)
+    print(state["trader_investment_plan"])
+    print(state["final_trade_decision"])
 
-# Initialize with custom config
-ta = TradingAgentsGraph(debug=True, config=config)
 
-# forward propagate
-_, decision = ta.propagate("NVDA", "2024-05-10")
-print(decision)
-
-# Memorize mistakes and reflect
-# ta.reflect_and_remember(1000) # parameter is the position returns
+if __name__ == "__main__":
+    main()

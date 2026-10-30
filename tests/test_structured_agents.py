@@ -29,6 +29,7 @@ class TestRenderTraderDecision:
         )
         md = render_ashare_trader_decision(d)
         assert "**Decision**: hold" in md
+        assert "**Confidence**: 63%" in md
         assert "**Human Review Required**: True" in md
         assert "FINAL TRANSACTION PROPOSAL: **HOLD**" in md
 
@@ -39,12 +40,14 @@ class TestRenderResearchPlan:
         p = ResearchPlan(
             recommendation=PortfolioRating.OVERWEIGHT,
             rationale="Bull case carried; tailwinds intact.",
-            strategic_actions="Build position over two weeks; cap at 5%.",
+            strategic_actions="Enter near the close only if funds hold; exit tomorrow morning.",
+            confidence=61,
         )
         md = render_research_plan(p)
         assert "**Recommendation**: Overweight" in md
         assert "**Rationale**: Bull case carried" in md
-        assert "**Strategic Actions**: Build position" in md
+        assert "**Strategic Actions**: Enter near the close" in md
+        assert "**Confidence**: 61%" in md
 
 
 def _make_trader_state():
@@ -96,6 +99,7 @@ class TestTraderAgent:
         result = trader(_make_trader_state())
         plan = result["trader_investment_plan"]
         assert "**Decision**: buy" in plan
+        assert "**Confidence**: 78%" in plan
         assert "**Suggested Position Ratio**: 0.35" in plan
         assert "FINAL TRANSACTION PROPOSAL: **BUY**" in plan
         assert plan in result["messages"][0].content
@@ -159,7 +163,8 @@ class TestResearchManagerAgent:
         plan = ResearchPlan(
             recommendation=PortfolioRating.OVERWEIGHT,
             rationale="Bull case is stronger; AI tailwind intact.",
-            strategic_actions="Build position gradually over two weeks.",
+            strategic_actions="Enter near the close only if volume holds; sell tomorrow morning.",
+            confidence=66,
         )
         llm = _structured_rm_llm(captured, plan)
         rm = create_research_manager(llm)
@@ -167,7 +172,8 @@ class TestResearchManagerAgent:
         ip = result["investment_plan"]
         assert "**Recommendation**: Overweight" in ip
         assert "**Rationale**: Bull case" in ip
-        assert "**Strategic Actions**: Build position" in ip
+        assert "**Strategic Actions**: Enter near the close" in ip
+        assert "**Confidence**: 66%" in ip
 
     def test_prompt_uses_5_tier_rating_scale(self):
         captured = {}

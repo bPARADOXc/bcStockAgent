@@ -1,0 +1,131 @@
+{
+  "strategy_name": "small_capital_single_stock_short_term_v1",
+  "objective": "每天最多选一只股票，全仓或空仓，偏短线隔夜/次日上午卖出。",
+  "score_threshold": 0.62,
+  "min_cross_section_size": 80,
+  "min_amount": 20000000,
+  "transaction_cost_bps": 20,
+  "slippage_bps": 10,
+  "stop_loss_pct": 3.0,
+  "take_profit_pct": 6.0,
+  "max_trades_per_day": 1,
+  "allow_risk_names": false,
+  "factor_weights_overnight": {
+    "ma5_gap_ma10_1455": -0.12,
+    "ma5_gap_change": 0.12,
+    "ma5_slope": 0.12,
+    "ma10_slope": 0.1,
+    "ma5_acceleration": 0.08,
+    "ma5_volatility": -0.1,
+    "price_gap_ma60_1455": 0.12,
+    "volume_gap_ma5_ma10_1455": 0.1,
+    "volume_gap_change": 0.08,
+    "volume_ma5_slope": 0.08,
+    "late_price_return": 0.08,
+    "stock_vs_market_late_return": 0.06,
+    "regime_adjusted_late_return": 0.06,
+    "ma5_slope_vs_market": 0.06,
+    "regime_adjusted_ma5_slope": 0.06,
+    "volume_gap_change_vs_market": 0.05,
+    "regime_adjusted_volume_flow": 0.05,
+    "tail_close_volatility": -0.06,
+    "tail_intraday_drawdown_proxy": 0.04,
+    "liquidity_tail_volume_ma5_log": 0.04,
+    "liquidity_tail_volume_spike": 0.04,
+    "limit_up_distance_pct": -0.02,
+    "near_limit_up_proxy": 0.03,
+    "near_limit_down_proxy": -0.08
+  },
+  "factor_weights_ohlcv": {
+    "momentum_3d": 0.12,
+    "momentum_5d": 0.1,
+    "reversal_1d": 0.1,
+    "ma5_gap_ma10": 0.14,
+    "ma10_gap_ma20": 0.08,
+    "ma5_slope_3d": 0.1,
+    "volume_ratio_5_20": 0.1,
+    "amount_ma5_score": 0.08,
+    "volatility_5d": -0.1,
+    "range_position_20d": 0.08,
+    "breakout_20d": 0.06,
+    "amihud_illiquidity": -0.04,
+    "daily_return_vs_market": 0.06,
+    "regime_adjusted_momentum_3d": 0.08,
+    "amount_score_vs_market": 0.06,
+    "volatility_5d_vs_market": -0.05,
+    "limit_up_distance_pct": -0.03,
+    "near_limit_up_proxy": 0.03,
+    "near_limit_down_proxy": -0.08
+  },
+  "factor_weights_external": {
+    "sentiment_attention_sentiment_score": 0.08,
+    "sentiment_attention_attention_heat": 0.06,
+    "sentiment_attention_news_count_log": 0.04,
+    "sector_concept_sector_strength": 0.08,
+    "sector_concept_concept_heat": 0.08,
+    "sector_concept_stock_rank_in_sector": -0.05,
+    "limit_ecology_limit_up_count_in_sector": 0.05,
+    "limit_ecology_broken_limit_rate": -0.06,
+    "capital_flow_main_net_inflow_ratio": 0.06,
+    "capital_flow_large_order_net_inflow_ratio": 0.06,
+    "event_disclosure_event_sentiment_score": 0.05,
+    "microstructure_order_imbalance": 0.08,
+    "microstructure_bid_ask_spread_bp": -0.05
+  },
+  "factor_groups": {
+    "technical_tail_ma": [
+      "ma5_gap_ma10_1455",
+      "ma5_gap_change",
+      "ma5_slope",
+      "ma10_slope",
+      "ma5_acceleration",
+      "ma5_volatility",
+      "price_gap_ma60_1455",
+      "late_price_return"
+    ],
+    "volume_liquidity": [
+      "volume_gap_ma5_ma10_1455",
+      "volume_gap_change",
+      "volume_ma5_slope",
+      "liquidity_tail_volume_ma5_log",
+      "liquidity_tail_volume_spike",
+      "amount_score_vs_market"
+    ],
+    "market_regime": [
+      "stock_vs_market_late_return",
+      "regime_adjusted_late_return",
+      "ma5_slope_vs_market",
+      "regime_adjusted_ma5_slope",
+      "volume_gap_change_vs_market",
+      "regime_adjusted_volume_flow",
+      "daily_return_vs_market",
+      "regime_adjusted_momentum_3d"
+    ],
+    "limit_up_ecology": [
+      "limit_up_distance_pct",
+      "near_limit_up_proxy",
+      "near_limit_down_proxy"
+    ],
+    "sector_concept": [
+      "sector_concept_sector_strength",
+      "sector_concept_concept_heat",
+      "sector_concept_stock_rank_in_sector"
+    ],
+    "sentiment_attention": [
+      "sentiment_attention_sentiment_score",
+      "sentiment_attention_attention_heat",
+      "sentiment_attention_news_count_log"
+    ],
+    "capital_flow": [
+      "capital_flow_main_net_inflow_ratio",
+      "capital_flow_large_order_net_inflow_ratio"
+    ],
+    "event_disclosure": [
+      "event_disclosure_event_sentiment_score"
+    ],
+    "microstructure": [
+      "microstructure_order_imbalance",
+      "microstructure_bid_ask_spread_bp"
+    ]
+  }
+}
