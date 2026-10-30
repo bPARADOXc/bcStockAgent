@@ -1,5 +1,7 @@
 # iOS 本地版 A股短线筛选
 
+这是独立的条件规则筛选 App，与本仓库的 TradingAgents 多智能体研究程序分别运行。App 在手机本地按固定行情条件筛选股票，不调用六类分析师或多空辩论，不需要 Python 服务或大模型 API Key。
+
 这是一个独立的 SwiftUI iOS 工程，只放在 `ios_app/` 下，不依赖也不修改 Android App 或 Python 筛选代码。
 
 ## 功能

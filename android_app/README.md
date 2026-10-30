@@ -1,5 +1,7 @@
 # A股短线筛选 Android App
 
+这是独立的条件规则筛选 App，与本仓库的 TradingAgents 多智能体研究程序分别运行。App 在手机本地按固定行情条件筛选股票，不调用六类分析师或多空辩论，不需要 Python 服务或大模型 API Key。
+
 这是项目内独立的 Android 客户端工程，面向 Android 12+ 内部 APK。
 
 ## 功能

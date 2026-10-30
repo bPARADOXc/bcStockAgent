@@ -1,6 +1,6 @@
 # bcStockAgent A 股使用指南
 
-本仓库是 [TauricResearch/TradingAgents](https://github.com/TauricResearch/TradingAgents) 的 A 股衍生版本。功能变化、安装、移动端及实验入口见[主 README](../README.md)。以下命令均从仓库根目录执行。
+本仓库是 [TauricResearch/TradingAgents](https://github.com/TauricResearch/TradingAgents) 的 A 股衍生版本。功能变化、安装和独立规则筛选工具入口见[主 README](../README.md)。以下命令均从仓库根目录执行。
 
 ## 选择运行路径
 
@@ -8,7 +8,7 @@
 | --- | --- | --- |
 | 了解模拟研究流程 | `python -m scripts.e2e_mock_ashare_demo` | 否，固定模拟结果 |
 | 生成单股多智能体报告 | `tradingagents` 或 `python main.py` | 是 |
-| 按规则筛选沪深主板 | `python -m scripts.screen_ashare_main_board` | 否，需要行情网络 |
+| 独立规则程序筛选沪深主板（不运行 TradingAgents） | `python -m scripts.screen_ashare_main_board` | 否，需要行情网络 |
 | 直接读取国内数据 | 下面的 Provider 示例 | 否，部分服务需要额外凭据 |
 
 ## 安装与配置
@@ -104,7 +104,9 @@ print("数据：", result.data)
 
 常规公开接口无需统一的付费行情 Key。通达信相关能力依赖 `mootdx` 和可达 TCP 节点；问财语义研报搜索需要 `IWENCAI_API_KEY`，雪球讨论需要有效 `XUEQIU_COOKIE`。缺少可选凭据时，相关工具会返回不可用信息。请勿上传真实 Cookie。
 
-## 主板条件筛选
+## 独立工具：主板条件规则筛选
+
+以下程序与上面的 TradingAgents 多智能体研究分别运行。它仅复用仓库内行情模块，按固定条件筛选候选，不调用大模型、六类分析师、多空辩论或风险讨论。独立 Android/iOS App 的使用说明见主 README，它们也不依赖 TradingAgents 服务。
 
 ```bash
 # 先验证少量代码；没有结果也可能是未满足规则，而非程序故障。

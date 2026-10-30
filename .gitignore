@@ -240,3 +240,6 @@ xcuserdata/
 *.xcuserstate
 # Installed skill registry is local machine state
 skills/.skills_store_lock.json
+
+# Private local research; excluded from repository publication
+/experiments/
